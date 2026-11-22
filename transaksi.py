@@ -17,6 +17,7 @@ class Transaksi:
         self.__tanggal_transaksi = datetime.now()
         self.__pelanggan = pelanggan  # objek Pelanggan, boleh None (pelanggan umum)
         self.__daftar_detail = []
+        self.__urutan_detail = 0  # penomoran ID detail, tidak berkurang saat item dihapus
         self.__total = 0.0
         self.__uang_bayar = 0.0
         self.__kembalian = 0.0
@@ -84,11 +85,36 @@ class Transaksi:
                 return detail
         if jumlah > buku.get_stok():
             raise StokTidakCukupError(buku.get_judul(), jumlah, buku.get_stok())
-        id_detail = f"{self.__id_transaksi}-D{len(self.__daftar_detail) + 1:02d}"
+        self.__urutan_detail += 1
+        id_detail = f"{self.__id_transaksi}-D{self.__urutan_detail:02d}"
         detail = DetailTransaksi(id_detail, buku, jumlah)
         self.__daftar_detail.append(detail)
         self.hitung_total()
         return detail
+
+    def ubah_jumlah_detail(self, buku, jumlah):
+        """Menetapkan jumlah beli suatu buku yang sudah ada di keranjang (dengan cek stok)."""
+        self.__pastikan_draft()
+        if jumlah <= 0:
+            raise ValueError("Jumlah beli harus lebih dari 0.")
+        for detail in self.__daftar_detail:
+            if detail.get_buku() is buku:
+                if jumlah > buku.get_stok():
+                    raise StokTidakCukupError(buku.get_judul(), jumlah, buku.get_stok())
+                detail.ubah_jumlah(jumlah)
+                self.hitung_total()
+                return detail
+        raise ValueError("Buku belum ada di keranjang.")
+
+    def hapus_detail_transaksi(self, buku):
+        """Menghapus buku dari keranjang."""
+        self.__pastikan_draft()
+        for detail in self.__daftar_detail:
+            if detail.get_buku() is buku:
+                self.__daftar_detail.remove(detail)
+                self.hitung_total()
+                return
+        raise ValueError("Buku belum ada di keranjang.")
 
     def hitung_total(self):
         self.__total = 0.0

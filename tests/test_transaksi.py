@@ -161,6 +161,62 @@ class TestTransaksi(unittest.TestCase):
             self.assertIn(teks, struk)
 
 
+class TestUbahDanHapusItem(unittest.TestCase):
+    def setUp(self):
+        kategori = Kategori("K01", "Umum")
+        self.laskar = BukuFiksi("B001", "Laskar Pelangi", "Andrea", 85000, 10, kategori, "Drama")
+        self.atomic = BukuNonFiksi("B002", "Atomic Habits", "James Clear", 110000, 5,
+                                   kategori, "Psikologi")
+        self.trx = Transaksi.buat_transaksi("T001")
+        self.trx.tambah_detail_transaksi(self.laskar, 2)
+        self.trx.tambah_detail_transaksi(self.atomic, 1)
+
+    def test_ubah_jumlah_detail(self):
+        self.trx.ubah_jumlah_detail(self.laskar, 4)
+        self.assertEqual(self.trx.get_daftar_detail()[0].get_jumlah(), 4)
+        self.assertEqual(self.trx.get_total(), 4 * 85000 + 110000)
+
+    def test_ubah_jumlah_detail_melebihi_stok_ditolak(self):
+        with self.assertRaises(StokTidakCukupError):
+            self.trx.ubah_jumlah_detail(self.atomic, 6)
+        self.assertEqual(self.trx.get_daftar_detail()[1].get_jumlah(), 1)
+
+    def test_ubah_jumlah_detail_nol_ditolak(self):
+        with self.assertRaises(ValueError):
+            self.trx.ubah_jumlah_detail(self.laskar, 0)
+
+    def test_ubah_jumlah_buku_yang_tidak_di_keranjang_ditolak(self):
+        asing = BukuFiksi("B9", "Asing", "P", 1000, 5, Kategori("K9", "X"), "g")
+        with self.assertRaises(ValueError):
+            self.trx.ubah_jumlah_detail(asing, 1)
+
+    def test_hapus_detail_transaksi(self):
+        self.trx.hapus_detail_transaksi(self.laskar)
+        detail = self.trx.get_daftar_detail()
+        self.assertEqual(len(detail), 1)
+        self.assertIs(detail[0].get_buku(), self.atomic)
+        self.assertEqual(self.trx.get_total(), 110000)
+
+    def test_hapus_buku_yang_tidak_di_keranjang_ditolak(self):
+        self.trx.hapus_detail_transaksi(self.laskar)
+        with self.assertRaises(ValueError):
+            self.trx.hapus_detail_transaksi(self.laskar)
+
+    def test_id_detail_tidak_kembar_setelah_hapus(self):
+        self.trx.hapus_detail_transaksi(self.laskar)          # sisa D02
+        baru = BukuFiksi("B3", "Baru", "P", 1000, 5, Kategori("K3", "Y"), "g")
+        self.trx.tambah_detail_transaksi(baru, 1)              # harus D03, bukan D02
+        ids = [d.get_id_detail() for d in self.trx.get_daftar_detail()]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_tidak_bisa_diubah_setelah_selesai(self):
+        self.trx.proses_pembayaran(10000000)
+        with self.assertRaises(ValueError):
+            self.trx.ubah_jumlah_detail(self.laskar, 1)
+        with self.assertRaises(ValueError):
+            self.trx.hapus_detail_transaksi(self.laskar)
+
+
 class TestStatusTransaksi(unittest.TestCase):
     def test_status_valid_adalah_tuple(self):
         self.assertIsInstance(STATUS_VALID, tuple)
