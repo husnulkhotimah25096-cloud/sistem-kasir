@@ -25,12 +25,25 @@ class Penjualan:
     def tampilkan_riwayat_penjualan(self):
         """Mengembalikan list teks, satu entri per transaksi."""
         riwayat = []
-        for t in self.__daftar_penjualan:
+        for no, t in enumerate(self.__daftar_penjualan, start=1):
             pelanggan = t.get_pelanggan()
             nama = pelanggan.get_nama() if pelanggan else "Umum"
             waktu = t.get_tanggal_transaksi().strftime("%Y-%m-%d %H:%M:%S")
-            riwayat.append(f"{t.get_id_transaksi()} | {waktu} | {nama} | Rp{t.get_total():,.0f}")
+            riwayat.append(f"{no}. {t.get_id_transaksi()} | {waktu} | {nama} | Rp{t.get_total():,.0f}")
         return riwayat
+
+    def pelanggan_unik(self):
+        """Mengembalikan set ID pelanggan yang pernah bertransaksi (tanpa duplikat)."""
+        return {t.get_pelanggan().get_id_pelanggan()
+                for t in self.__daftar_penjualan if t.get_pelanggan() is not None}
+
+    def buku_terlaris(self):
+        """Mengembalikan tuple (judul, jumlah terjual) buku terlaris, atau None."""
+        terjual = self.buat_laporan_penjualan()["buku_terjual"]
+        if not terjual:
+            return None
+        judul = max(terjual, key=terjual.get)
+        return (judul, terjual[judul])
 
     def hitung_total_pendapatan(self):
         total = 0.0
@@ -53,6 +66,7 @@ class Penjualan:
             "jumlah_transaksi": self.hitung_jumlah_transaksi(),
             "total_pendapatan": self.hitung_total_pendapatan(),
             "buku_terjual": buku_terjual,
+            "jumlah_pelanggan_unik": len(self.pelanggan_unik()),
         }
 
     def cetak_laporan(self):
@@ -60,8 +74,10 @@ class Penjualan:
         baris = ["=" * 40, "   LAPORAN PENJUALAN LITERA HOUSE", "=" * 40,
                  f"Jumlah transaksi : {lap['jumlah_transaksi']}",
                  f"Total pendapatan : Rp{lap['total_pendapatan']:,.0f}",
-                 "Buku terjual:"]
-        for judul, jml in lap["buku_terjual"].items():
+                 f"Pelanggan unik   : {lap['jumlah_pelanggan_unik']}",
+                 "Buku terjual (terbanyak dulu):"]
+        urut = sorted(lap["buku_terjual"].items(), key=lambda item: item[1], reverse=True)
+        for judul, jml in urut:
             baris.append(f"  - {judul}: {jml}")
         baris.append("=" * 40)
         return "\n".join(baris)

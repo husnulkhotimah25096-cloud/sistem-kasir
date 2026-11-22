@@ -93,5 +93,58 @@ class TestPenjualan(unittest.TestCase):
         self.assertIn("Laskar Pelangi", teks)
 
 
+class TestPenjualanKoleksi(unittest.TestCase):
+    def setUp(self):
+        kategori = Kategori("K01", "Umum")
+        self.laskar = BukuFiksi("B001", "Laskar Pelangi", "Andrea", 85000, 50, kategori, "Drama")
+        self.dilan = BukuFiksi("B002", "Dilan", "Pidi Baiq", 70000, 50, kategori, "Roman")
+        self.budi = Pelanggan("P001", "Budi", "0812")
+        self.ani = Pelanggan("P002", "Ani", "0813")
+        self.penjualan = Penjualan()
+
+    def _jual(self, id_transaksi, buku, jumlah, pelanggan=None):
+        trx = Transaksi.buat_transaksi(id_transaksi, pelanggan)
+        trx.tambah_detail_transaksi(buku, jumlah)
+        trx.proses_pembayaran(10000000)
+        self.penjualan.simpan_transaksi(trx)
+
+    def test_pelanggan_unik_adalah_set_tanpa_duplikat(self):
+        self._jual("T1", self.laskar, 1, self.budi)
+        self._jual("T2", self.dilan, 1, self.budi)   # Budi dua kali
+        self._jual("T3", self.dilan, 1, self.ani)
+        self._jual("T4", self.dilan, 1)              # pelanggan umum
+        hasil = self.penjualan.pelanggan_unik()
+        self.assertIsInstance(hasil, set)
+        self.assertEqual(hasil, {"P001", "P002"})
+
+    def test_buku_terlaris_adalah_tuple(self):
+        self._jual("T1", self.laskar, 2)
+        self._jual("T2", self.dilan, 5)
+        hasil = self.penjualan.buku_terlaris()
+        self.assertIsInstance(hasil, tuple)
+        self.assertEqual(hasil, ("Dilan", 5))
+
+    def test_buku_terlaris_kosong(self):
+        self.assertIsNone(self.penjualan.buku_terlaris())
+
+    def test_riwayat_penjualan_bernomor(self):
+        self._jual("T1", self.laskar, 1, self.budi)
+        self._jual("T2", self.dilan, 1)
+        riwayat = self.penjualan.tampilkan_riwayat_penjualan()
+        self.assertTrue(riwayat[0].startswith("1. T1"))
+        self.assertTrue(riwayat[1].startswith("2. T2"))
+
+    def test_laporan_memuat_jumlah_pelanggan_unik(self):
+        self._jual("T1", self.laskar, 1, self.budi)
+        self._jual("T2", self.dilan, 1, self.budi)
+        self.assertEqual(self.penjualan.buat_laporan_penjualan()["jumlah_pelanggan_unik"], 1)
+
+    def test_cetak_laporan_urut_terlaris(self):
+        self._jual("T1", self.laskar, 1)
+        self._jual("T2", self.dilan, 4)
+        teks = self.penjualan.cetak_laporan()
+        self.assertLess(teks.index("Dilan"), teks.index("Laskar Pelangi"))
+
+
 if __name__ == "__main__":
     unittest.main()

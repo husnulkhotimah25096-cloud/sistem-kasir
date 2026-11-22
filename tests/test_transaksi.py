@@ -10,7 +10,7 @@ from exceptions import PembayaranKurangError, StokTidakCukupError
 from kategori import Kategori
 from pelanggan import Pelanggan
 from penjualan import Penjualan
-from transaksi import DIBATALKAN, DRAFT, SELESAI, Transaksi
+from transaksi import DIBATALKAN, DRAFT, SELESAI, STATUS_VALID, Transaksi
 
 
 class TestTransaksi(unittest.TestCase):
@@ -159,6 +159,21 @@ class TestTransaksi(unittest.TestCase):
         for teks in ("LITERA HOUSE", "T001", "Budi", "Laskar Pelangi",
                      "170,000", "200,000", "30,000"):
             self.assertIn(teks, struk)
+
+
+class TestStatusTransaksi(unittest.TestCase):
+    def test_status_valid_adalah_tuple(self):
+        self.assertIsInstance(STATUS_VALID, tuple)
+        self.assertEqual(STATUS_VALID, (DRAFT, SELESAI, DIBATALKAN))
+
+    def test_status_transaksi_selalu_termasuk_status_valid(self):
+        kategori = Kategori("K01", "Umum")
+        buku = BukuFiksi("B1", "J", "P", 1000, 5, kategori, "g")
+        trx = Transaksi.buat_transaksi("T1")
+        self.assertIn(trx.get_status(), STATUS_VALID)
+        trx.tambah_detail_transaksi(buku, 1)
+        trx.proses_pembayaran(1000)
+        self.assertIn(trx.get_status(), STATUS_VALID)
 
 
 if __name__ == "__main__":

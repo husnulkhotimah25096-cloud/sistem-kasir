@@ -1,8 +1,18 @@
+"""Class Pelanggan. Versi perbaikan dari kode asli.
+
+Perubahan utama:
+- Typo atribut diperbaiki (nomor_HP -> nomor_hp, riwayaat_pembelian -> riwayat_pembelian)
+- Atribut privat + getter/setter dengan validasi (encapsulation)
+- Method mengembalikan nilai / melempar exception, tidak lagi print
+- Ditambah cari_pelanggan() untuk memilih pelanggan berdasarkan ID
+"""
+import copy
 
 from exceptions import PelangganTidakDitemukanError
+from interfaces import DapatDitampilkan
 
 
-class Pelanggan:
+class Pelanggan(DapatDitampilkan):
     def __init__(self, id_pelanggan, nama, nomor_hp, alamat=""):
         self.__id_pelanggan = id_pelanggan
         self.__nama = ""
@@ -74,6 +84,10 @@ class Pelanggan:
         """Mengembalikan list teks, satu entri per pelanggan."""
         return [str(p) for p in daftar_pelanggan]
 
+    def tampilkan_info(self):
+        """Implementasi interface DapatDitampilkan."""
+        return str(self)
+
     def __str__(self):
         return (
             f"ID Pelanggan : {self.__id_pelanggan}\n"
@@ -88,5 +102,6 @@ class Pelanggan:
         self.__riwayat_pembelian.append(transaksi)
 
     def lihat_riwayat_pembelian(self):
-        """Mengembalikan salinan list riwayat (list asli tidak bisa diubah dari luar)."""
-        return list(self.__riwayat_pembelian)
+        """Mengembalikan salinan RIWAYAT (deep copy), sehingga baik list maupun
+        isi dict di dalamnya tidak bisa mengubah data asli dari luar class."""
+        return copy.deepcopy(self.__riwayat_pembelian)

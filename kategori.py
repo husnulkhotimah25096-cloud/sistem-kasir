@@ -1,8 +1,15 @@
+"""Class Kategori. Versi perbaikan dari kode asli.
 
+Perubahan utama:
+- Atribut privat + getter/setter dengan validasi (encapsulation)
+- Method mengembalikan nilai / melempar exception, tidak lagi print
+- edit_kategori() bisa mengubah sebagian field saja
+"""
 from exceptions import KategoriTidakDitemukanError
+from interfaces import DapatDitampilkan
 
 
-class Kategori:
+class Kategori(DapatDitampilkan):
     def __init__(self, id_kategori, nama_kategori, deskripsi=""):
         self.__id_kategori = id_kategori
         self.__nama_kategori = ""
@@ -59,6 +66,10 @@ class Kategori:
     def tampilkan_kategori(self):
         """Mengembalikan teks info kategori."""
         return f"{self.__id_kategori} - {self.__nama_kategori}: {self.__deskripsi}"
+
+    def tampilkan_info(self):
+        """Implementasi interface DapatDitampilkan."""
+        return self.tampilkan_kategori()
 
     def __str__(self):
         return self.tampilkan_kategori()

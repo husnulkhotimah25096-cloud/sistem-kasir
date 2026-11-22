@@ -1,10 +1,17 @@
+"""Class Buku (abstract) dan turunannya. Versi perbaikan dari kode asli.
 
-from abc import ABC, abstractmethod
+Perubahan utama:
+- Atribut privat + getter/setter dengan validasi (encapsulation)
+- Buku menjadi abstract class; BukuFiksi dan BukuNonFiksi mewarisinya
+- Method mengembalikan nilai / melempar exception, tidak lagi print
+"""
+from abc import abstractmethod
 
 from exceptions import BukuTidakDitemukanError, StokTidakCukupError
+from interfaces import DapatDitampilkan
 
 
-class Buku(ABC):
+class Buku(DapatDitampilkan):
     def __init__(self, kode_buku, judul, penulis, harga, stok, kategori):
         self.__kode_buku = kode_buku
         self.__judul = ""

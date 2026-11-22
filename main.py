@@ -1,10 +1,11 @@
 """Demo CLI sementara. UI Tkinter akan dibuat di langkah berikutnya."""
 from buku import BukuFiksi, BukuNonFiksi
-from exceptions import LiteraHouseError
+from exceptions import LiteraHouseError, PembayaranKurangError, StokTidakCukupError
+from interfaces import DapatDitampilkan
 from kategori import Kategori
 from pelanggan import Pelanggan
 from penjualan import Penjualan
-from transaksi import Transaksi
+from transaksi import STATUS_VALID, Transaksi
 
 
 def main():
@@ -21,10 +22,14 @@ def main():
     laskar.tambah_buku(daftar_buku)
     atomic.tambah_buku(daftar_buku)
 
-    Pelanggan("P001", "Budi", "081234567890", "Pekalongan").tambah_pelanggan(daftar_pelanggan)
+    budi = Pelanggan("P001", "Budi", "081234567890", "Pekalongan")
+    budi.tambah_pelanggan(daftar_pelanggan)
 
-    for buku in daftar_buku:  # polymorphism
-        print(buku.tampilkan_info(), end="\n\n")
+    # Polymorphism + interface: objek dari class berbeda, satu cara pemanggilan
+    print("--- Polymorphism lewat interface DapatDitampilkan ---")
+    for objek in (laskar, atomic, novel, budi):
+        assert isinstance(objek, DapatDitampilkan)
+        print(objek.tampilkan_info(), end="\n\n")
 
     # Fitur Buku: cari, edit, kelola stok, hapus
     print("--- Fitur Buku ---")
@@ -39,9 +44,10 @@ def main():
     sementara.hapus_buku(daftar_buku)
     print("Jumlah buku di daftar:", len(daftar_buku), "\n")
 
-    # 1. Transaksi berhasil
+    # 1. Transaksi berhasil: try / except (beberapa) / else / finally
+    print("--- Transaksi T001 ---")
+    trx = Transaksi.buat_transaksi("T001")
     try:
-        trx = Transaksi.buat_transaksi("T001")
         trx.pilih_pelanggan(Pelanggan.cari_pelanggan(daftar_pelanggan, "P001"))
         trx.tambah_detail_transaksi(laskar, 2)
         trx.tambah_detail_transaksi(atomic, 1)
@@ -54,29 +60,45 @@ def main():
         print("Subtotal setelah ubah jumlah:", detail_atomic.get_subtotal(), "\n")
 
         trx.proses_pembayaran(500000)
-        trx.simpan_transaksi(penjualan)
-        print(trx.cetak_struk())
+    except PembayaranKurangError as e:
+        print("Pembayaran kurang:", e)
+    except StokTidakCukupError as e:
+        print("Stok tidak cukup:", e)
     except LiteraHouseError as e:
         print("Error:", e)
+    else:
+        # else hanya jalan bila try berhasil tanpa exception
+        trx.simpan_transaksi(penjualan)
+        print(trx.cetak_struk())
+    finally:
+        # finally selalu jalan, ada error atau tidak
+        print(f"[finally] Status T001: {trx.get_status()}\n")
 
     # 2. Pembayaran kurang, lalu dibatalkan
     trx2 = Transaksi.buat_transaksi("T002")
     try:
         trx2.tambah_detail_transaksi(atomic, 2)
         trx2.proses_pembayaran(100000)
-    except LiteraHouseError as e:
+    except PembayaranKurangError as e:
         print("Error:", e)
         trx2.batalkan_transaksi()
-        print("Status T002:", trx2.get_status())
+    finally:
+        print("[finally] Status T002:", trx2.get_status())
 
     # 3. Stok tidak cukup
     try:
         Transaksi.buat_transaksi("T003").tambah_detail_transaksi(atomic, 99)
-    except LiteraHouseError as e:
+    except StokTidakCukupError as e:
         print("Error:", e)
 
+    # Laporan, tuple, dan set
+    print()
     print(penjualan.cetak_laporan())
-    print("Riwayat Budi:", len(daftar_pelanggan[0].lihat_riwayat_pembelian()), "transaksi")
+    print("Buku terlaris (tuple):", penjualan.buku_terlaris())
+    print("Pelanggan unik (set):", penjualan.pelanggan_unik())
+    print("Status yang sah (tuple):", STATUS_VALID)
+    print("Riwayat penjualan:", penjualan.tampilkan_riwayat_penjualan())
+    print("Riwayat Budi:", len(budi.lihat_riwayat_pembelian()), "transaksi")
 
 
 if __name__ == "__main__":

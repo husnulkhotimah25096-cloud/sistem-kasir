@@ -7,6 +7,8 @@ from exceptions import PembayaranKurangError, StokTidakCukupError
 DRAFT = "Draft"
 SELESAI = "Selesai"
 DIBATALKAN = "Dibatalkan"
+# Tuple: kumpulan status yang sah (tidak boleh berubah, jadi cocok memakai tuple)
+STATUS_VALID = (DRAFT, SELESAI, DIBATALKAN)
 
 
 class Transaksi:
@@ -52,6 +54,11 @@ class Transaksi:
 
     def sudah_selesai(self):
         return self.__status_transaksi == SELESAI
+
+    def __ubah_status(self, status):
+        if status not in STATUS_VALID:
+            raise ValueError(f"Status '{status}' tidak valid.")
+        self.__status_transaksi = status
 
     def __pastikan_draft(self):
         if self.__status_transaksi != DRAFT:
@@ -112,7 +119,7 @@ class Transaksi:
             detail.get_buku().kurangi_stok(detail.get_jumlah())
         self.__uang_bayar = uang
         self.__kembalian = kembalian
-        self.__status_transaksi = SELESAI
+        self.__ubah_status(SELESAI)
         self.__tanggal_transaksi = datetime.now()
         if self.__pelanggan is not None:
             self.__pelanggan.tambah_riwayat_pembelian(self.ringkasan())
@@ -127,7 +134,7 @@ class Transaksi:
     def batalkan_transaksi(self):
         """Membatalkan transaksi Draft. Stok belum berkurang, jadi tidak perlu dikembalikan."""
         self.__pastikan_draft()
-        self.__status_transaksi = DIBATALKAN
+        self.__ubah_status(DIBATALKAN)
 
     # ---- Output ----
     def ringkasan(self):

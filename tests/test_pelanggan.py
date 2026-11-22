@@ -91,5 +91,11 @@ class TestPelanggan(unittest.TestCase):
         self.assertEqual(len(self.pelanggan.lihat_riwayat_pembelian()), 1)
 
 
+    def test_isi_riwayat_tidak_bisa_diubah_dari_luar(self):
+        self.pelanggan.tambah_riwayat_pembelian({"id_transaksi": "T001", "total": 85000})
+        self.pelanggan.lihat_riwayat_pembelian()[0]["total"] = 0
+        self.assertEqual(self.pelanggan.lihat_riwayat_pembelian()[0]["total"], 85000)
+
+
 if __name__ == "__main__":
     unittest.main()
